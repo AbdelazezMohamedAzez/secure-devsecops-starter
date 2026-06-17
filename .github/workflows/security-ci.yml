@@ -1,0 +1,28 @@
+name: Security CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  security-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+
+      - name: Run Semgrep SAST scan
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: auto
+
+      - name: Build Docker image
+        run: docker build -t secure-devsecops-starter:ci .
