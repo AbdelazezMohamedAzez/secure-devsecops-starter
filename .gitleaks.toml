@@ -1,0 +1,7 @@
+title = "Custom Gitleaks Rules"
+
+[[rules]]
+id = "devsecops-demo-secret"
+description = "Detect custom demo secrets for DevSecOps testing"
+regex = '''DEVSECOPS_SECRET_[A-Za-z0-9]{10,}'''
+secretGroup = 0
