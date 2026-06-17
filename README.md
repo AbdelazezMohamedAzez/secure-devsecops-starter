@@ -11,6 +11,7 @@ A simple Python Flask API used to practice DevSecOps basics.
 * SAST scanning using Semgrep
 * Least-privilege GitHub Actions permissions
 * Docker image build inside the pipeline
+* Container vulnerability scanning using Trivy
 
 ## Run locally
 
@@ -95,3 +96,10 @@ Result:
 - The pipeline failed successfully.
 - The demo secret was removed.
 - The pipeline passed again after remediation.
+
+
+## Container Scanning with Trivy
+
+Trivy was added to scan the Docker image for HIGH and CRITICAL vulnerabilities.
+
+The pipeline now builds the Docker image and scans it before considering the CI successful.
