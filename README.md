@@ -81,3 +81,9 @@ The project currently has:
 ## Project Goal
 
 The goal of this project is to build a simple hands-on DevSecOps pipeline and improve it step by step.
+
+
+## Secret Scanning Test
+
+Gitleaks was tested using a custom demo rule.  
+The pipeline failed when a demo secret was committed, then passed after removing it.
