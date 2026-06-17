@@ -85,5 +85,13 @@ The goal of this project is to build a simple hands-on DevSecOps pipeline and im
 
 ## Secret Scanning Test
 
-Gitleaks was tested using a custom demo rule.  
-The pipeline failed when a demo secret was committed, then passed after removing it.
+Gitleaks was tested using a custom demo rule.
+
+A demo secret was intentionally committed on a separate test branch to verify that secret scanning works.
+
+Result:
+
+- Gitleaks detected the demo secret.
+- The pipeline failed successfully.
+- The demo secret was removed.
+- The pipeline passed again after remediation.
