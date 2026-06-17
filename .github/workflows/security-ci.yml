@@ -25,6 +25,12 @@ jobs:
         with:
           config: auto
 
+      - name: Run Python dependency audit
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pip-audit
+          pip-audit -r requirements.txt
+
       - name: Build Docker image
         run: docker build -t secure-devsecops-starter:ci .
 
