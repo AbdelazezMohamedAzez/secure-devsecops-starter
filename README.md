@@ -122,3 +122,6 @@ The project currently has:
 ## Project Goal
 
 The goal of this project is to build a simple hands-on DevSecOps pipeline and improve it step by step.
+
+## Week 2 - CI/CD Hardening
+Started branch protection, PR workflow, and pipeline security hardening.
