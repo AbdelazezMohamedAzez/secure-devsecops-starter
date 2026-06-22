@@ -6,6 +6,8 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
+  security-events: write
 
 jobs:
   security-checks:
@@ -19,6 +21,8 @@ jobs:
 
       - name: Run Gitleaks secret scan
         uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Semgrep SAST scan
         uses: semgrep/semgrep-action@v1
