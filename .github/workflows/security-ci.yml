@@ -26,6 +26,7 @@ concurrency:
 jobs:
   security-checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -33,30 +34,104 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Prepare reports directory
+        run: mkdir -p reports
+
       - name: Run Gitleaks secret scan
+        id: gitleaks
+        continue-on-error: true
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Semgrep SAST scan
-        uses: semgrep/semgrep-action@v1
-        with:
-          config: auto
+        id: semgrep
+        continue-on-error: true
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install semgrep
+          semgrep scan --config auto --severity ERROR --error --json --output reports/semgrep.json .
 
       - name: Run Python dependency audit
+        id: pip_audit
+        continue-on-error: true
         run: |
           python -m pip install --upgrade pip
           python -m pip install pip-audit
-          pip-audit -r requirements.txt
+          pip-audit -r requirements.txt --format json --output reports/pip-audit.json
 
       - name: Build Docker image
+        id: docker_build
+        continue-on-error: true
         run: docker build -t secure-devsecops-starter:ci .
 
       - name: Run Trivy container scan
+        id: trivy
+        if: always() && steps.docker_build.outcome == 'success'
+        continue-on-error: true
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: secure-devsecops-starter:ci
           format: table
+          output: reports/trivy.txt
           severity: CRITICAL,HIGH
-          exit-code: 1
+          exit-code: '1'
           ignore-unfixed: true
+
+      - name: Upload security scan reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-reports
+          path: reports/
+          if-no-files-found: ignore
+
+      - name: Write security summary
+        if: always()
+        run: |
+          echo "## Security Gates Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Gate | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Gitleaks Secrets Scan | ${{ steps.gitleaks.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Semgrep SAST | ${{ steps.semgrep.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| pip-audit Dependency Scan | ${{ steps.pip_audit.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ steps.docker_build.outcome }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trivy Container Scan | ${{ steps.trivy.outcome }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Enforce security gates
+        if: always()
+        run: |
+          failed=0
+
+          if [ "${{ steps.gitleaks.outcome }}" = "failure" ]; then
+            echo "❌ Gitleaks gate failed: secret detected or scan failed."
+            failed=1
+          fi
+
+          if [ "${{ steps.semgrep.outcome }}" = "failure" ]; then
+            echo "❌ Semgrep gate failed: high-risk SAST finding detected or scan failed."
+            failed=1
+          fi
+
+          if [ "${{ steps.pip_audit.outcome }}" = "failure" ]; then
+            echo "❌ pip-audit gate failed: vulnerable dependency detected or scan failed."
+            failed=1
+          fi
+
+          if [ "${{ steps.docker_build.outcome }}" = "failure" ]; then
+            echo "❌ Docker build failed."
+            failed=1
+          fi
+
+          if [ "${{ steps.trivy.outcome }}" = "failure" ]; then
+            echo "❌ Trivy gate failed: HIGH or CRITICAL vulnerability detected."
+            failed=1
+          fi
+
+          if [ "$failed" -eq 1 ]; then
+            echo "Security gates failed."
+            exit 1
+          fi
+
+          echo "✅ All security gates passed."
