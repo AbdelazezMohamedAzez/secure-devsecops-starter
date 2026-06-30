@@ -26,11 +26,12 @@ The pipeline does not only generate security reports. It also enforces blocking 
 * Code scanning using CodeQL
 * Python dependency vulnerability scanning using pip-audit
 * Container vulnerability scanning using Trivy
+* DAST scanning using OWASP ZAP Baseline Scan
 * Dependency update automation using Dependabot
 * Local pre-commit security checks
 * Docker non-root user hardening
+* Basic Flask security headers
 * Security scan reports uploaded as GitHub Actions artifacts
-
 ---
 
 ## Project Goal
@@ -44,28 +45,29 @@ This repository demonstrates:
 * How to scan source code for security issues
 * How to scan Python dependencies for vulnerabilities
 * How to scan Docker images for HIGH and CRITICAL vulnerabilities
+* How to run DAST against a live containerized web application
 * How to harden Docker containers by avoiding root execution
+* How to reduce common passive web findings using security headers
 * How to collect security evidence using reports and artifacts
 * How to apply shift-left security using pre-commit hooks
-
 ---
 
 ## Tech Stack
 
-| Area                  | Tool           |
-| --------------------- | -------------- |
-| Application           | Python Flask   |
-| Web Server            | Gunicorn       |
-| Containerization      | Docker         |
-| CI/CD                 | GitHub Actions |
-| Secret Scanning       | Gitleaks       |
-| SAST                  | Semgrep        |
-| Code Scanning         | CodeQL         |
-| Dependency Scanning   | pip-audit      |
-| Container Scanning    | Trivy          |
-| Dependency Automation | Dependabot     |
-| Local Security Checks | pre-commit     |
-
+| Area                  | Tool                    |
+| --------------------- | ----------------------- |
+| Application           | Python Flask            |
+| Web Server            | Gunicorn                |
+| Containerization      | Docker                  |
+| CI/CD                 | GitHub Actions          |
+| Secret Scanning       | Gitleaks                |
+| SAST                  | Semgrep                 |
+| Code Scanning         | CodeQL                  |
+| Dependency Scanning   | pip-audit               |
+| Container Scanning    | Trivy                   |
+| DAST                  | OWASP ZAP Baseline Scan |
+| Dependency Automation | Dependabot              |
+| Local Security Checks | pre-commit              |
 ---
 
 ## Run Locally
@@ -124,7 +126,7 @@ pull_request → main, develop
 manual workflow_dispatch
 ```
 
-Current pipeline stages:
+Main security pipeline stages:
 
 1. Checkout source code
 2. Prepare security reports directory
@@ -137,6 +139,17 @@ Current pipeline stages:
 9. Write security summary
 10. Enforce final security gates
 
+OWASP ZAP DAST workflow stages:
+
+1. Checkout source code
+2. Build Docker image
+3. Run the Flask application container
+4. Wait for the `/health` endpoint
+5. Run OWASP ZAP Baseline Scan against the running app
+6. Upload ZAP reports as GitHub Actions artifacts
+7. Stop and remove the application container
+
+The DAST workflow validates the application at runtime instead of only scanning source files or dependencies.
 ---
 
 ## GitHub Actions Hardening
@@ -174,9 +187,11 @@ The pipeline uses security gates to block insecure changes before merge.
 | Dependency Gate | pip-audit | Vulnerable Python dependency detected   |
 | Container Gate  | Trivy     | HIGH or CRITICAL vulnerability detected |
 | Build Gate      | Docker    | Docker image build fails                |
+| Runtime Gate    | ZAP setup | Application container fails to start    |
 
-The final enforcement step checks the outcome of every security stage and fails the pipeline if any gate fails.
+The final enforcement step checks the outcome of every security stage and fails the pipeline if any blocking gate fails.
 
+OWASP ZAP Baseline Scan is currently used as a DAST evidence and triage step. It uploads reports as artifacts so findings can be reviewed and remediated.
 ---
 
 ## Security Reports and Observability
@@ -190,6 +205,11 @@ reports/
 ├── semgrep.json
 ├── pip-audit.json
 └── trivy.txt
+
+zap-reports/
+├── zap-report.html
+├── zap-report.md
+└── zap-report.json
 ```
 
 These reports provide evidence for:
@@ -197,9 +217,9 @@ These reports provide evidence for:
 * Security review
 * Debugging failed pipelines
 * Vulnerability triage
+* DAST finding review
 * Interview demonstration
 * Portfolio documentation
-
 ---
 
 ## Security Finding and Remediation: Flask Development Server
@@ -297,6 +317,36 @@ Current Trivy behavior:
 
 ---
 
+## Dynamic Application Security Testing with OWASP ZAP
+
+OWASP ZAP Baseline Scan was added to test the running Flask application dynamically.
+
+The ZAP workflow:
+
+1. Builds the Docker image
+2. Runs the application container
+3. Waits for the `/health` endpoint
+4. Runs OWASP ZAP Baseline Scan against `http://127.0.0.1:5000`
+5. Generates HTML, Markdown, and JSON reports
+6. Uploads the reports as GitHub Actions artifacts
+
+This adds runtime web security testing to the project.
+
+The scan is unauthenticated and passive-focused, which makes it suitable as an early CI/CD DAST check.
+
+Report documentation:
+
+```text
+docs/week-6-dast-report.md
+```
+
+Artifact name:
+
+```text
+zap-dast-report
+```
+---
+
 ## CodeQL Code Scanning
 
 CodeQL was added as an additional static code analysis layer.
@@ -372,6 +422,7 @@ The project currently has:
 * Flask app running locally
 * Docker build working
 * Hardened Dockerfile using a non-root user
+* Basic Flask security headers configured
 * GitHub Actions CI pipeline working
 * Least-privilege workflow permissions configured
 * Gitleaks configured and tested
@@ -381,11 +432,12 @@ The project currently has:
 * CodeQL configured and passing
 * Dependabot configured
 * pre-commit configured and tested locally
+* OWASP ZAP DAST workflow added
 * Security reports uploaded as artifacts
+* ZAP DAST reports uploaded as artifacts
 * Real Semgrep findings fixed
 * Real dependency vulnerability fixed
 * Security gates passing
-
 ---
 
 ## Week 1 Summary
@@ -422,6 +474,24 @@ Completed hardening work:
 
 ---
 
+## Week 6 Summary: OWASP ZAP DAST Scanning
+
+During Week 6, the project added Dynamic Application Security Testing against the running Flask application.
+
+Completed DAST work:
+
+* Added an OWASP ZAP Baseline Scan workflow
+* Built the Docker image before scanning
+* Started the application container inside GitHub Actions
+* Added a `/health` readiness check before scanning
+* Scanned the running application at `http://127.0.0.1:5000`
+* Generated ZAP reports in HTML, Markdown, and JSON formats
+* Uploaded ZAP reports as GitHub Actions artifacts
+* Added basic Flask security headers to reduce common passive scan findings
+
+This moves the project from static-only checks to runtime web security testing.
+---
+
 ## What I Learned
 
 * How to harden GitHub Actions using least-privilege permissions
@@ -432,15 +502,15 @@ Completed hardening work:
 * How to use CodeQL for GitHub-native code scanning
 * How to automate dependency updates using Dependabot
 * How to implement shift-left security using pre-commit hooks
+* How to run OWASP ZAP DAST against a live containerized application
+* How to use `/health` checks before runtime security scans
 * How to document security findings and remediation as portfolio evidence
-
 ---
 
 ## Next Improvements
 
 Planned next steps:
 
-* Add OWASP ZAP DAST scanning
 * Add Terraform and Checkov for IaC security
 * Add SBOM generation using Syft
 * Add container image signing using Cosign
