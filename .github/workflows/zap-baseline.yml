@@ -1,0 +1,69 @@
+name: OWASP ZAP DAST
+
+on:
+  push:
+    branches: [ "main", "week-6-owasp-zap-dast" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  zap-baseline:
+    name: OWASP ZAP Baseline Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Build Docker image
+        run: docker build -t secure-devsecops-starter:zap .
+
+      - name: Run application container
+        run: |
+          docker run -d --name secure-devsecops-app -p 5000:5000 secure-devsecops-starter:zap
+
+      - name: Wait for application
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:5000/health; then
+              echo "Application is ready"
+              exit 0
+            fi
+            echo "Waiting for application..."
+            sleep 2
+          done
+
+          echo "Application did not become ready"
+          docker logs secure-devsecops-app
+          exit 1
+
+      - name: Create ZAP reports directory
+        run: mkdir -p zap-reports
+
+      - name: Run OWASP ZAP baseline scan
+        run: |
+          docker run --rm --network host \
+            -v ${{ github.workspace }}/zap-reports:/zap/wrk/:rw \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://127.0.0.1:5000 \
+            -r zap-report.html \
+            -w zap-report.md \
+            -J zap-report.json \
+            -I
+
+      - name: Upload ZAP reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-dast-report
+          path: zap-reports/
+
+      - name: Stop application container
+        if: always()
+        run: |
+          docker stop secure-devsecops-app || true
+          docker rm secure-devsecops-app || true
