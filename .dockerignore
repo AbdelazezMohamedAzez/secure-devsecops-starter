@@ -2,6 +2,15 @@
 .github
 __pycache__
 *.pyc
+*.pyo
+*.pyd
 .env
-.env.*
+.venv
 venv
+env
+reports
+zap-reports
+docs
+README.md
+.gitignore
+.pre-commit-config.yaml
