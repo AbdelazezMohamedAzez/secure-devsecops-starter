@@ -4,6 +4,11 @@ WORKDIR /app
 
 COPY requirements.txt .
 
+RUN groupadd --system appgroup \
+    && useradd --system --gid appgroup --create-home --home-dir /home/appuser appuser
+
+COPY --chown=appuser:appgroup . .
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
