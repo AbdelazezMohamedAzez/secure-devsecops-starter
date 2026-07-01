@@ -517,3 +517,8 @@ Planned next steps:
 * Add OIDC-based cloud deployment
 * Deploy the application to GCP Cloud Run
 * Add cloud audit logging and security monitoring
+
+
+## Related Security Projects
+
+- [Multi-Cloud IaC Security Scanning](https://github.com/AbdelazezMohamedAzez/multi-cloud-iac-security-scanning)
