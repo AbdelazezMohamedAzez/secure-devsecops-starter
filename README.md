@@ -1,6 +1,6 @@
 # Secure DevSecOps Starter
 
-A hands-on Python Flask API project used to practice and demonstrate DevSecOps fundamentals, secure CI/CD pipelines, automated security gates, container hardening, shift-left security, runtime DAST, and practical multi-cloud secure deployment evidence.
+A hands-on Python Flask API project used to practice and demonstrate DevSecOps fundamentals, secure CI/CD pipelines, automated security gates, container hardening, shift-left security, runtime DAST, practical multi-cloud secure deployment evidence, and software supply chain security.
 
 ---
 
@@ -12,7 +12,7 @@ The main goal is to demonstrate how security checks can be integrated into the s
 
 The pipeline does not only generate security reports. It also enforces blocking security gates when high-risk issues are detected.
 
-The repository also includes practical cloud deployment evidence across AWS and GCP, showing both VM-based and managed serverless container deployment models.
+The repository also includes practical cloud deployment evidence across AWS and GCP, showing both VM-based and managed serverless container deployment models. Week 10 extends the project into software supply chain security using SBOM generation, SBOM vulnerability scanning, and image signing strategy documentation.
 
 ---
 
@@ -41,6 +41,10 @@ The repository also includes practical cloud deployment evidence across AWS and 
 - OWASP ZAP DAST evidence against deployed cloud endpoints
 - CI vs runtime container scan investigation
 - Temporary cloud resource cleanup documentation
+- SBOM generation using Syft
+- SBOM vulnerability scanning using Grype
+- Software supply chain security workflow
+- Cosign image signing strategy documentation
 
 ---
 
@@ -66,6 +70,10 @@ The repository also includes practical cloud deployment evidence across AWS and 
 | GCP Build | Cloud Build |
 | GCP Logs | Cloud Logging |
 | IaC Security Related Project | Terraform + Checkov |
+| SBOM Generation | Syft |
+| SBOM Vulnerability Scanning | Grype |
+| Image Signing Strategy | Cosign |
+| Supply Chain Automation | GitHub Actions |
 
 ---
 
@@ -81,6 +89,7 @@ This section is the main roadmap of the repository. Each week summarizes the sec
 | Week 7 | Container Security | Hardened Docker execution by adding a non-root user, ownership-safe copy behavior, and container runtime security documentation. | [Security Finding and Remediation: Docker Running as Root](#security-finding-and-remediation-docker-running-as-root) |
 | Week 8 | Multi-Cloud IaC Security | Completed in a separate repo: Terraform security baselines for AWS and GCP, Checkov scanning, CI gates, and remediation evidence. | [Multi-Cloud IaC Security Scanning](https://github.com/AbdelazezMohamedAzez/multi-cloud-iac-security-scanning) |
 | Week 9 | Multi-Cloud Secure Deployment | Added AWS/GCP secure deployment planning, AWS EC2 practical deployment, GCP Cloud Run practical deployment, runtime Trivy scan, ZAP scans against cloud endpoints, CI vs runtime scan investigation, and cleanup evidence. | [docs/week-9-multicloud-secure-deployment.md](docs/week-9-multicloud-secure-deployment.md), [AWS Practical Evidence](docs/evidence/practical/aws-practical-deployment-evidence.md), [GCP Practical Evidence](docs/evidence/practical/gcp-practical-deployment-evidence.md) |
+| Week 10 | Software Supply Chain Security | Generated SBOM with Syft, scanned the SBOM with Grype, documented vulnerability triage, added Cosign image signing strategy, and automated SBOM evidence through GitHub Actions. | [docs/week-10-supply-chain-security.md](docs/week-10-supply-chain-security.md), [Week 10 Reports](docs/evidence/week-10/reports/) |
 
 ---
 
@@ -92,6 +101,7 @@ The `docs/` folder contains the detailed evidence behind the weekly summaries.
 |---|---|
 | [docs/week-6-dast-report.md](docs/week-6-dast-report.md) | Week 6 OWASP ZAP DAST report and runtime web security testing notes |
 | [docs/week-9-multicloud-secure-deployment.md](docs/week-9-multicloud-secure-deployment.md) | Week 9 multi-cloud secure deployment overview |
+| [docs/week-10-supply-chain-security.md](docs/week-10-supply-chain-security.md) | Week 10 software supply chain security, SBOM generation, Grype scan, Cosign signing strategy, and automation notes |
 | [docs/evidence/aws-secure-deployment-evidence.md](docs/evidence/aws-secure-deployment-evidence.md) | AWS secure deployment planning evidence |
 | [docs/evidence/gcp-secure-deployment-plan.md](docs/evidence/gcp-secure-deployment-plan.md) | GCP secure deployment planning evidence |
 | [docs/evidence/aws-vs-gcp-security-comparison.md](docs/evidence/aws-vs-gcp-security-comparison.md) | AWS vs GCP security comparison |
@@ -101,9 +111,13 @@ The `docs/` folder contains the detailed evidence behind the weekly summaries.
 
 ---
 
-## Practical Evidence Reports
+## Evidence Reports
 
-Week 9 practical reports are stored under:
+The repository stores practical evidence reports under `docs/evidence/`.
+
+### Week 9 Practical Cloud Reports
+
+Week 9 practical cloud reports are stored under:
 
 ```text
 docs/evidence/practical/reports/
@@ -130,6 +144,39 @@ Report purpose:
 | `zap-week9-gcp.html` | OWASP ZAP HTML report for the GCP Cloud Run endpoint |
 | `zap-week9-gcp.json` | OWASP ZAP JSON report for the GCP Cloud Run endpoint |
 
+### Week 10 Supply Chain Reports
+
+Week 10 supply chain reports are stored under:
+
+```text
+docs/evidence/week-10/reports/
+```
+
+Expected reports:
+
+```text
+docs/evidence/week-10/reports/
+├── sbom-syft.json
+├── sbom-syft-table.txt
+├── grype-sbom-report.txt
+└── grype-sbom-report.json
+```
+
+Report purpose:
+
+| Report | Purpose |
+|---|---|
+| `sbom-syft.json` | Machine-readable SBOM generated by Syft |
+| `sbom-syft-table.txt` | Human-readable SBOM package inventory |
+| `grype-sbom-report.txt` | Human-readable SBOM vulnerability scan report |
+| `grype-sbom-report.json` | Machine-readable Grype vulnerability scan report |
+
+The local Docker archive used for analysis is excluded from Git tracking:
+
+```text
+docs/evidence/week-10/reports/*.tar
+```
+
 ---
 
 ## Repository Structure
@@ -140,24 +187,32 @@ Report purpose:
 │   └── workflows/
 │       ├── security-ci.yml
 │       ├── codeql.yml
-│       └── zap-dast.yml
+│       ├── zap-dast.yml
+│       └── supply-chain-security.yml
 ├── docs/
 │   ├── week-6-dast-report.md
 │   ├── week-9-multicloud-secure-deployment.md
+│   ├── week-10-supply-chain-security.md
 │   └── evidence/
 │       ├── aws-secure-deployment-evidence.md
 │       ├── gcp-secure-deployment-plan.md
 │       ├── aws-vs-gcp-security-comparison.md
 │       ├── week-9-final-evidence-checklist.md
-│       └── practical/
-│           ├── aws-practical-deployment-evidence.md
-│           ├── gcp-practical-deployment-evidence.md
+│       ├── practical/
+│       │   ├── aws-practical-deployment-evidence.md
+│       │   ├── gcp-practical-deployment-evidence.md
+│       │   └── reports/
+│       │       ├── trivy-week9-aws.txt
+│       │       ├── zap-week9-aws.html
+│       │       ├── zap-week9-aws.json
+│       │       ├── zap-week9-gcp.html
+│       │       └── zap-week9-gcp.json
+│       └── week-10/
 │           └── reports/
-│               ├── trivy-week9-aws.txt
-│               ├── zap-week9-aws.html
-│               ├── zap-week9-aws.json
-│               ├── zap-week9-gcp.html
-│               └── zap-week9-gcp.json
+│               ├── sbom-syft.json
+│               ├── sbom-syft-table.txt
+│               ├── grype-sbom-report.txt
+│               └── grype-sbom-report.json
 ├── app.py
 ├── Dockerfile
 ├── requirements.txt
@@ -621,6 +676,99 @@ This demonstrates both traditional VM-based deployment and managed serverless co
 
 ---
 
+## Week 10: Software Supply Chain Security
+
+Week 10 expanded the project into software supply chain security.
+
+The goal was to document what exists inside the container image, scan that inventory for vulnerabilities, and define a safe image signing strategy.
+
+### SBOM Generation
+
+Syft was used to generate a Software Bill of Materials for the Docker image.
+
+Generated evidence:
+
+```text
+docs/evidence/week-10/reports/sbom-syft.json
+docs/evidence/week-10/reports/sbom-syft-table.txt
+```
+
+The SBOM provides visibility into:
+
+- OS packages
+- Python packages
+- Runtime components
+- Package versions
+- Package types
+- Component metadata
+
+### SBOM Vulnerability Scanning
+
+Grype was used to scan the Syft-generated SBOM.
+
+Generated evidence:
+
+```text
+docs/evidence/week-10/reports/grype-sbom-report.txt
+docs/evidence/week-10/reports/grype-sbom-report.json
+```
+
+The Grype report showed that supply chain risk can come from:
+
+- Python runtime components
+- Debian base image packages
+- OS-level packages
+- Packages with no direct fix available
+
+This reinforces an important DevSecOps lesson:
+
+```text
+Application dependencies are only one part of the risk.
+Base images and runtime layers must also be reviewed.
+```
+
+### Cosign Image Signing Strategy
+
+Cosign was documented as the image signing and artifact integrity strategy.
+
+The recommended secure approach is keyless signing through GitHub Actions OIDC rather than storing private signing keys in the repository.
+
+The signing strategy focuses on proving:
+
+```text
+The image was built by a trusted workflow.
+The image has not been replaced unexpectedly.
+The image can be verified before deployment.
+```
+
+### Automation
+
+A dedicated workflow was added:
+
+```text
+.github/workflows/supply-chain-security.yml
+```
+
+The workflow:
+
+- Builds the Docker image
+- Generates SBOM using Syft
+- Generates readable SBOM table output
+- Scans the SBOM using Grype
+- Generates TXT and JSON vulnerability reports
+- Uploads reports as GitHub Actions artifacts
+- Writes a supply chain security summary
+
+Current mode:
+
+```text
+Evidence mode
+```
+
+Grype findings are collected for review and do not block the pipeline yet. This is intentional because initial findings need triage before converting them into blocking gates.
+
+---
+
 ## Current Status
 
 The project currently has:
@@ -651,6 +799,11 @@ The project currently has:
 - CI vs runtime scan behavior documented
 - AWS and GCP ZAP reports collected
 - AWS and GCP temporary resources cleaned up
+- Week 10 supply chain security evidence completed
+- SBOM generated using Syft
+- SBOM vulnerability scan completed using Grype
+- Supply chain security workflow added
+- Cosign image signing strategy documented
 
 ---
 
@@ -673,6 +826,10 @@ The project currently has:
 - How to compare VM-based and managed container deployment models
 - How scanner configuration can hide or reveal vulnerability findings
 - How to document temporary cloud resource cleanup after testing
+- How to generate SBOMs for container images using Syft
+- How to scan SBOMs for vulnerabilities using Grype
+- How to triage supply chain findings from base image and runtime packages
+- How to design a safe Cosign image signing strategy without committing private keys
 
 ---
 
@@ -680,8 +837,8 @@ The project currently has:
 
 Planned next steps:
 
-- Add SBOM generation using Syft
-- Add container image signing using Cosign
+- Implement practical Cosign keyless signing with GHCR or Artifact Registry
+- Add blocking Grype gates after vulnerability triage
 - Add OIDC-based cloud deployment
 - Add Kubernetes security lab using a lightweight local or managed cluster
 - Add cloud audit logging screenshots and detection notes
@@ -710,3 +867,5 @@ This repository demonstrates practical DevSecOps and Cloud Security Engineer ski
 - GCP Cloud Run deployment evidence
 - Cloud cleanup discipline
 - Professional security documentation
+- Software supply chain security evidence
+- SBOM and vulnerability triage workflow
