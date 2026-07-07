@@ -4,3 +4,4 @@ venv/
 .env
 .env.*
 .DS_Store
+docs/evidence/week-10/reports/*.tar
