@@ -1,0 +1,105 @@
+name: Supply Chain Security
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - week-10-supply-chain-security
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  supply-chain-security:
+    name: SBOM and SBOM Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Prepare reports directory
+        run: mkdir -p reports
+
+      - name: Build Docker image
+        run: docker build -t secure-devsecops-starter:supply-chain .
+
+      - name: Generate SBOM with Syft - JSON
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/reports:/reports" \
+            anchore/syft:latest \
+            secure-devsecops-starter:supply-chain \
+            -o syft-json=/reports/sbom-syft.json
+
+      - name: Generate SBOM with Syft - Table
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/reports:/reports" \
+            anchore/syft:latest \
+            secure-devsecops-starter:supply-chain \
+            -o table=/reports/sbom-syft-table.txt
+
+      - name: Scan SBOM with Grype - Table
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "$PWD/reports:/reports" \
+            anchore/grype:latest \
+            sbom:/reports/sbom-syft.json \
+            -o table | tee reports/grype-sbom-report.txt
+
+      - name: Scan SBOM with Grype - JSON
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "$PWD/reports:/reports" \
+            anchore/grype:latest \
+            sbom:/reports/sbom-syft.json \
+            -o json > reports/grype-sbom-report.json
+
+      - name: Write supply chain security summary
+        run: |
+          {
+            echo "## Supply Chain Security Summary"
+            echo ""
+            echo "### Completed"
+            echo "- Docker image built successfully."
+            echo "- SBOM generated with Syft."
+            echo "- SBOM scanned with Grype."
+            echo "- Reports uploaded as workflow artifacts."
+            echo ""
+            echo "### Mode"
+            echo "This workflow currently runs in evidence mode. Grype findings are collected for review and do not block the pipeline yet."
+            echo ""
+            echo "### Generated reports"
+            echo "- sbom-syft.json"
+            echo "- sbom-syft-table.txt"
+            echo "- grype-sbom-report.txt"
+            echo "- grype-sbom-report.json"
+            echo ""
+            echo "### Grype report preview"
+            echo '```text'
+            head -40 reports/grype-sbom-report.txt || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload supply chain reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: supply-chain-security-reports
+          path: reports/
+          if-no-files-found: error
